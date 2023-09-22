@@ -11,26 +11,38 @@ In this repository, you will find TrOCR, an OCR model specifically developed for
 virtualenv trocr_env
 source trocr_env/bin/activate
 git clone https://github.com/iitb-research-code/indic-ocr-recognition.git
-cd trocr
+cd indic-ocr-recognition
+git checkout trocr
 pip install -r requirements.txt
+```
+
+
+## Dataset Details
+
+1. The Training on TROCR model has been performed on [IIIT-HW Dataset](http://cvit.iiit.ac.in/research/projects/cvit-projects/indic-hw-data)
+2. The format of the data is as follows
+```
+DATA
+├── hindi
+|   └──train/
+|   └──test/
+|   └──val/
+|   └──train.txt
+|   └──test.txt
+|   └──val.txt
+|   └──vocab.txt
 ```
 
 ## Train for a new Language
 
-1. Download the Word level Handwritten dataset for that language from the [IIIT-HW Datasets](http://cvit.iiit.ac.in/research/projects/cvit-projects/indic-hw-data). This folder contains the train, test and val word-level images and their corresponding text labels in train.txt, test.txt and val.txt files.
-2. Change the train, test, val text file and root directory paths in ``train.py``.
-3. We need a language specific RoBERTa decoder model for training TrOCR. Find a RoBERTa model for that language on [Hugging Face](http://huggingface.co).
-4. Copy the model name from Hugging Face and change the ``decode`` variable on ``line 80`` in ``train.py``.
-5. Change the ``training_args`` on ``line 113`` in ``train.py`` if required.
-6. The model is ready for training. Run the following command:
-```
-python train.py
+1. Make all configuration changes from *config.py* file as necessary
+2. To train the TROCR model, run the following command
+```python train.py```
 ```
 
 ## Inference Steps
 
-
-
+1. To evaluate and get inference results, run the following command after configurations in *config.py* file accordingly
 ```
 python inference.py
 ```
