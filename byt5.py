@@ -30,13 +30,12 @@ batch_size = 4
 
 
 
-class OCRDataset(torch.utils.data.Dataset):
-    def __init__(self, root_dir: str, df, processor, tokenizer, max_target_length= 128):
+class IAMDataset(Dataset):
+    def __init__(self, root_dir, df, processor, max_target_length=128):
         self.root_dir = root_dir
         self.df = df
         self.processor = processor
         self.max_target_length = max_target_length
-        self.tokenizer = tokenizer
 
     def __len__(self):
         return len(self.df)
@@ -49,17 +48,15 @@ class OCRDataset(torch.utils.data.Dataset):
         image = Image.open(os.path.join(self.root_dir, file_name)).convert("RGB")
         pixel_values = self.processor(image, return_tensors="pt").pixel_values
         # add labels (input_ids) by encoding the text
-        labels = self.tokenizer(text,
-                                padding="max_length",
-                                max_length=self.max_target_length).input_ids
+        labels = self.processor.tokenizer(text,
+                                          padding="max_length",
+                                          max_length=self.max_target_length).input_ids
         # important: make sure that PAD tokens are ignored by the loss function
-        labels = [label if label !=
-                  self.tokenizer.pad_token_id else -100 for label in labels]
+        labels = [label if label != self.processor.tokenizer.pad_token_id else -100 for label in labels]
 
-        return {
-            "pixel_values": pixel_values.squeeze(),
-            "labels": torch.tensor(labels),
-        }
+        encoding = {"pixel_values": pixel_values.squeeze(), "labels": torch.tensor(labels)}
+        # print(encoding)
+        return encoding
 
 
     
@@ -73,12 +70,11 @@ processor = TrOCRProcessor(image_processor=image_processor, tokenizer=tokenizer)
 
 
 # Initialize the dataset and dataloader
-dataset = OCRDataset(root_dir=dataset_path, df=train_df, processor=processor, tokenizer=tokenizer)
+dataset = IAMDataset(root_dir=dataset_path, df=train_df, processor=processor)
 dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
-dataset_val = OCRDataset(root_dir=dataset_path, df=val_df, processor=processor, tokenizer=tokenizer)
+dataset_val = IAMDataset(root_dir=dataset_path, df=test_df, processor=processor)
 val_dataloader = torch.utils.data.DataLoader(dataset_val, batch_size=batch_size, shuffle=True)
-
 
 
 encoder = ViTModel.from_pretrained("google/vit-base-patch16-224")
@@ -86,7 +82,7 @@ decoder = T5DecoderOnlyForCausalLM.from_pretrained("google/byt5-base")
 
 model = VisionEncoderDecoderModel(encoder=encoder, decoder=decoder)
 model.config.decoder_start_token_id = model.config.decoder.decoder_start_token_id
-model.config.pad_token_id = tokenizer.pad_token_id
+model.config.pad_token_id = processor.tokenizer.pad_token_id
 model.config.vocab_size = model.config.decoder.vocab_size
 model.config.eos_token_id = tokenizer.eos_token_id
 model.config.max_length = 64
@@ -128,11 +124,11 @@ def compute_metrics(pred):
 
 trainer = Seq2SeqTrainer(
     model=model,
-    tokenizer=tokenizer,
+    tokenizer=processor.feature_extractor,
     args=training_args,
     compute_metrics=compute_metrics,
-    train_dataset=dataset,
-    eval_dataset=dataset_val,
+    train_dataset=train_dataset,
+    eval_dataset=eval_dataset,
     data_collator=default_data_collator,
 )
 
