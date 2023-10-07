@@ -1,0 +1,7 @@
+transformers
+Levenshtein
+datasets
+sentencepiece
+jiwer
+transformers[torch]
+pillow
