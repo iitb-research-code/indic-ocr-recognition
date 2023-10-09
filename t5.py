@@ -3,17 +3,44 @@ import torch.nn as nn
 
 from transformers.models.t5.modeling_t5 import T5PreTrainedModel, T5Stack
 from transformers.modeling_outputs import CausalLMOutputWithCrossAttentions
+from transformers.models.t5.modeling_t5 import T5Block
+
+from transformers.models.t5.modeling_t5 import T5PreTrainedModel, T5Stack
+import torch
+import torch.nn as nn
+from transformers.modeling_outputs import CausalLMOutputWithCrossAttentions, Seq2SeqLMOutput
 
 class T5DecoderOnlyForCausalLM(T5PreTrainedModel):
 
     def __init__(self, config):
         super().__init__(config)
-        self.shared = nn.Embedding(config.vocab_size, config.d_model)
-        self.decoder = T5Stack(config, self.shared)
-        self.lm_head = nn.Linear(config.d_model, config.vocab_size, bias=False)
-        self.is_decoder = True
         config.is_decoder = True
         config.use_cache = False
+        config.is_encoder_decoder = False
+        config.num_layers = config.num_decoder_layers
+        self.shared = nn.Embedding(config.vocab_size, config.d_model)
+        self.decoder = T5Stack(config, self.shared)
+        self.decoder.block = nn.ModuleList(
+            [T5Block(config, has_relative_attention_bias=bool(i == 0)) for i in range(6)]
+        )
+        self.lm_head = nn.Linear(config.d_model, config.vocab_size, bias=False)
+        self.is_decoder = True
+        
+    def get_input_embeddings(self):
+        return self.shared
+
+    def set_input_embeddings(self, new_embeddings):
+        self.shared = new_embeddings
+        self.decoder.set_input_embeddings(new_embeddings)
+
+    def set_output_embeddings(self, new_embeddings):
+        self.lm_head = new_embeddings
+
+    def get_output_embeddings(self):
+        return self.lm_head
+
+    def get_decoder(self):
+        return self.decoder
 
     def forward(
         self,
@@ -53,7 +80,7 @@ class T5DecoderOnlyForCausalLM(T5PreTrainedModel):
         attentions = decoder_outputs.attentions
         cross_attentions = decoder_outputs.cross_attentions
 
-        return CausalLMOutputWithCrossAttentions(
+        return CausalLMOutputWithCrossAttentions( 
             logits = logits,
             past_key_values = past_key_values,
             hidden_states = hidden_states,
