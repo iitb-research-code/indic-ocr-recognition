@@ -16,7 +16,8 @@ from transformers import (VisionEncoderDecoderModel, ViTImageProcessor, ByT5Toke
 import warnings
 warnings.filterwarnings("ignore")
 
-from t5 import T5DecoderOnlyForCausalLM
+from custom_class import T5DecoderOnlyForCausalLM
+from config import *
 
 cer_metric = load_metric('cer')
 
@@ -25,8 +26,8 @@ image_processor=ViTImageProcessor.from_pretrained('google/vit-base-patch16-224-i
 processor = TrOCRProcessor(image_processor=image_processor, tokenizer=tokenizer)
 
 
-encoder = ViTModel.from_pretrained("google/vit-base-patch16-224")
-decoder = T5DecoderOnlyForCausalLM.from_pretrained("google/byt5-base")
+encoder = ViTModel.from_pretrained(ENCODER)
+decoder = T5DecoderOnlyForCausalLM.from_pretrained(DECODER)
 # Create the VisionEncoderDecoderModel with the loaded encoder and decoder
 model = VisionEncoderDecoderModel(encoder=encoder, decoder=decoder)
 

@@ -1,14 +1,12 @@
+import os
+from PIL import Image
 import torch
 import torch.nn as nn
 
-from transformers.models.t5.modeling_t5 import T5PreTrainedModel, T5Stack
+from transformers.models.t5.modeling_t5 import T5PreTrainedModel, T5Stack, T5Block
 from transformers.modeling_outputs import CausalLMOutputWithCrossAttentions
-from transformers.models.t5.modeling_t5 import T5Block
 
-from transformers.models.t5.modeling_t5 import T5PreTrainedModel, T5Stack
-import torch
-import torch.nn as nn
-from transformers.modeling_outputs import CausalLMOutputWithCrossAttentions, Seq2SeqLMOutput
+
 
 class T5DecoderOnlyForCausalLM(T5PreTrainedModel):
 
@@ -20,9 +18,7 @@ class T5DecoderOnlyForCausalLM(T5PreTrainedModel):
         config.num_layers = config.num_decoder_layers
         self.shared = nn.Embedding(config.vocab_size, config.d_model)
         self.decoder = T5Stack(config, self.shared)
-        self.decoder.block = nn.ModuleList(
-            [T5Block(config, has_relative_attention_bias=bool(i == 0)) for i in range(6)]
-        )
+        self.decoder.block = nn.ModuleList([T5Block(config, has_relative_attention_bias=bool(i == 0)) for i in range(6)])
         self.lm_head = nn.Linear(config.d_model, config.vocab_size, bias=False)
         self.is_decoder = True
         
@@ -120,3 +116,25 @@ class T5DecoderOnlyForCausalLM(T5PreTrainedModel):
 
     def prepare_decoder_input_ids_from_labels(self, labels: torch.Tensor):
         return self._shift_right(labels)
+
+
+
+class OCRDataset(torch.utils.data.Dataset):
+    def __init__(self, root_dir, df, processor, max_target_length=128):
+        self.root_dir = root_dir
+        self.df = df
+        self.processor = processor
+        self.max_target_length = max_target_length
+
+    def __len__(self):
+        return len(self.df)
+
+    def __getitem__(self, idx):
+        file_name = self.df['file_name'][idx]
+        text = self.df['text'][idx]
+        image = Image.open(os.path.join(self.root_dir, file_name)).convert("RGB")
+        pixel_values = self.processor(image, return_tensors="pt").pixel_values
+        labels = self.processor.tokenizer(text, padding="max_length", max_length=self.max_target_length).input_ids
+        labels = [label if label != self.processor.tokenizer.pad_token_id else -100 for label in labels]
+        encoding = {"pixel_values": pixel_values.squeeze(), "labels": torch.tensor(labels)}
+        return encoding
