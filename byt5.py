@@ -2,9 +2,9 @@ import os
 import pandas as pd
 import torch
 
-torch.cuda.set_device(0)
+torch.cuda.set_device(1)
 torch.cuda.empty_cache()
-device = torch.device('cuda')
+device = torch.device('cuda:1')
 
 
 from datasets import load_metric
@@ -26,11 +26,11 @@ output_folder = './results/'
 dataset_path = '/data/BADRI/DATASETS/BENCHMARK/RECOGNITON/iiit_indic_words/hindi/'
 
 exp_type = "crs_loss"
-batch_size = 4
+batch_size = 1
 
 
 
-class IAMDataset(Dataset):
+class IAMDataset(torch.utils.data.Dataset):
     def __init__(self, root_dir, df, processor, max_target_length=128):
         self.root_dir = root_dir
         self.df = df
@@ -60,8 +60,8 @@ class IAMDataset(Dataset):
 
 
     
-train_df = pd.read_csv(os.path.join(dataset_path, 'train.txt'), names=['file_name', 'text'], sep=' ', nrows=80)
-val_df = pd.read_csv(os.path.join(dataset_path, 'val.txt'), names=['file_name', 'text'], sep=' ', nrows=10)
+train_df = pd.read_csv(os.path.join(dataset_path, 'train.txt'), names=['file_name', 'text'], sep=' ', nrows=8000)
+val_df = pd.read_csv(os.path.join(dataset_path, 'val.txt'), names=['file_name', 'text'], sep=' ', nrows=1000)
 
 
 tokenizer = ByT5Tokenizer.from_pretrained('google/byt5-base')
@@ -70,11 +70,11 @@ processor = TrOCRProcessor(image_processor=image_processor, tokenizer=tokenizer)
 
 
 # Initialize the dataset and dataloader
-dataset = IAMDataset(root_dir=dataset_path, df=train_df, processor=processor)
-dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True)
+train_dataset = IAMDataset(root_dir=dataset_path, df=train_df, processor=processor)
+train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
-dataset_val = IAMDataset(root_dir=dataset_path, df=test_df, processor=processor)
-val_dataloader = torch.utils.data.DataLoader(dataset_val, batch_size=batch_size, shuffle=True)
+val_dataset = IAMDataset(root_dir=dataset_path, df=val_df, processor=processor)
+val_dataloader = torch.utils.data.DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
 
 
 encoder = ViTModel.from_pretrained("google/vit-base-patch16-224")
@@ -96,7 +96,7 @@ model.config.num_beams = 4
 training_args = Seq2SeqTrainingArguments(
     predict_with_generate=True,
     evaluation_strategy="epoch",
-    num_train_epochs=50,
+    num_train_epochs=500,
     per_device_train_batch_size=batch_size,
     per_device_eval_batch_size=batch_size,
     fp16=False, ##
@@ -128,7 +128,7 @@ trainer = Seq2SeqTrainer(
     args=training_args,
     compute_metrics=compute_metrics,
     train_dataset=train_dataset,
-    eval_dataset=eval_dataset,
+    eval_dataset=val_dataset,
     data_collator=default_data_collator,
 )
 

@@ -29,10 +29,12 @@ encoder = ViTModel.from_pretrained("google/vit-base-patch16-224")
 decoder = T5DecoderOnlyForCausalLM.from_pretrained("google/byt5-base")
 # Create the VisionEncoderDecoderModel with the loaded encoder and decoder
 model = VisionEncoderDecoderModel(encoder=encoder, decoder=decoder)
-# model_path = '/data/BADRI/RECOGNITION/TRANSFORMERS/TEMP/checkpoints_old/checkpoint-1000/'
-# model.load_state_dict(torch.load(os.path.join(model_path, 'pytorch_model.bin')))
 
-torch.save(model.state_dict(), os.path.join('./models/', 'model_state_dict.pth'))
+
+model_path = '/data/BADRI/RECOGNITION/TRANSFORMERS/LATEST/indic-ocr-recognition/checkpoints/checkpoint-16000/'
+model.load_state_dict(torch.load(os.path.join(model_path, 'pytorch_model.bin')))
+
+# torch.save(model.state_dict(), os.path.join('./models/', 'model_state_dict.pth'))
 
 model.eval()
 
@@ -51,7 +53,7 @@ dataset_path = '/data/BADRI/DATASETS/BENCHMARK/RECOGNITON/iiit_indic_words/hindi
     
         
         
-test_df = pd.read_csv(os.path.join(dataset_path, 'val.txt'), names=['file_name', 'text'], sep=' ')
+test_df = pd.read_csv(os.path.join(dataset_path, 'test.txt'), names=['file_name', 'text'], sep=' ')
 for _, row in test_df.iterrows():
     image_path = dataset_path + row['file_name']
     preview(image_path, model, processor, device, row['text'])
