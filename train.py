@@ -1,6 +1,7 @@
 import os
+import json
 import torch
-torch.cuda.empty_cache()
+
 
 from PIL import Image
 import pandas as pd
@@ -13,6 +14,11 @@ from config import *
 
 import warnings
 warnings.filterwarnings('ignore')
+
+# Check if CUDA (GPU support) is available
+if torch.cuda.is_available():
+    # Specify the GPU device number (in this case, GPU 5)
+    device = torch.device("cuda:"+DEVICE)
 
 
 class OCRDataset(Dataset):
@@ -53,9 +59,21 @@ def compute_metrics(pred):
     cer = cer_metric.compute(predictions=pred_str, references=label_str)
     return {"cer": cer}
 
-def dataset_generator(root_dir):
-    train_df = pd.read_csv(root_dir + 'train.txt', sep=' ', names = ['file_name', 'text'])
-    val_df   = pd.read_csv(root_dir + 'val.txt', sep=' ', names = ['file_name', 'text'])
+def dataset_generator(root_dir):   
+    
+    with open(root_dir + 'train.json', 'r') as json_file:
+        data = json.load(json_file)
+    
+    train_df = pd.DataFrame.from_dict(data, orient ='index').reset_index()
+    train_df.columns = ['file_name', 'text']
+    
+    with open(root_dir + 'val.json', 'r') as json_file:
+        data = json.load(json_file)
+    
+    val_df = pd.DataFrame.from_dict(data, orient ='index').reset_index()
+    val_df.columns = ['file_name', 'text']
+
+    
     return train_df, val_df
     
     
@@ -68,10 +86,15 @@ if __name__ == "__main__":
     tokenizer = RobertaTokenizer.from_pretrained(DECODER)
     processor = TrOCRProcessor(feature_extractor=feature_extractor, tokenizer=tokenizer)
 
-    train_dataset = OCRDataset(root_dir=DATA_DIR+'train/', df=train_df, processor=processor)
-    eval_dataset  = OCRDataset(root_dir=DATA_DIR+'val/', df=val_df, processor=processor)
+    train_dataset = OCRDataset(root_dir=DATA_DIR + 'train/', df=train_df, processor=processor)
+    eval_dataset  = OCRDataset(root_dir=DATA_DIR + 'val/', df=val_df, processor=processor)
 
-    model = VisionEncoderDecoderModel.from_encoder_decoder_pretrained(ENCODER, DECODER)
+    if(RESUME):
+        model = VisionEncoderDecoderModel.from_pretrained(CHECKPOINT_FILE)
+    else:
+        model = VisionEncoderDecoderModel.from_encoder_decoder_pretrained(ENCODER, DECODER)
+    
+    
 
     model.config.decoder_start_token_id = processor.tokenizer.cls_token_id
     model.config.pad_token_id = processor.tokenizer.pad_token_id
@@ -120,5 +143,4 @@ if __name__ == "__main__":
 
     trainer.train()
 
-    os.makedirs("model/")
     model.save_pretrained("model/")
