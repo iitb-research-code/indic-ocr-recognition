@@ -21,7 +21,7 @@ from config import *
 
 cer_metric = load_metric('cer')
 
-tokenizer = ByT5Tokenizer.from_pretrained('google/byt5-base')
+tokenizer = ByT5Tokenizer.from_pretrained('google/byt5-small')
 image_processor=ViTImageProcessor.from_pretrained('google/vit-base-patch16-224-in21k')
 processor = TrOCRProcessor(image_processor=image_processor, tokenizer=tokenizer)
 
@@ -32,7 +32,7 @@ decoder = T5DecoderOnlyForCausalLM.from_pretrained(DECODER)
 model = VisionEncoderDecoderModel(encoder=encoder, decoder=decoder)
 
 
-model_path = '/data/BADRI/RECOGNITION/TRANSFORMERS/LATEST/indic-ocr-recognition/checkpoints/checkpoint-16000/'
+model_path = '/home/ganesh/BADRI/TRANSFORMERS/checkpoints/hindi/checkpoint-2000/'
 model.load_state_dict(torch.load(os.path.join(model_path, 'pytorch_model.bin')))
 
 # torch.save(model.state_dict(), os.path.join('./models/', 'model_state_dict.pth'))
@@ -48,13 +48,26 @@ def preview(image_path, model, processor, device, text):
     generated_ids = model.generate(pixel_values=pixel_values)
     generated_text = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
     print("Generated text:", generated_text,"\tActual text:", text)
+    return generated_text
     
     
-dataset_path = '/data/BADRI/DATASETS/BENCHMARK/RECOGNITON/iiit_indic_words/hindi/'
+dataset_path = '/home/ganesh/BADRI/RECOGNITION/data/iiit_indic_words/hindi/'
     
-        
+   
+preds, gts = [], []
         
 test_df = pd.read_csv(os.path.join(dataset_path, 'test.txt'), names=['file_name', 'text'], sep=' ')
 for _, row in test_df.iterrows():
-    image_path = dataset_path + row['file_name']
-    preview(image_path, model, processor, device, row['text'])
+    image_path = dataset_path + 'test/' + row['file_name']
+    generated_text = preview(image_path, model, processor, device, row['text'])
+    preds.append(generated_text)
+    gts.append(row['text'])
+    
+data = {'preds': preds, 'actual': gts}
+df = pd.DataFrame(data)
+
+df.to_csv('./../results/' + LANGUAGE + '.csv', index=False, header=False)
+    
+
+
+    

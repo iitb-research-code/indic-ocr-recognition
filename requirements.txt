@@ -1,7 +1,8 @@
 transformers
 Levenshtein
-datasets
+evaluate
 sentencepiece
 jiwer
 transformers[torch]
 pillow
+tensorboard

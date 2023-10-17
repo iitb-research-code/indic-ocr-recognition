@@ -4,8 +4,9 @@ import pandas as pd
 import torch
 
 
-from datasets import load_metric
+from evaluate import load
 from transformers import (VisionEncoderDecoderModel, ViTImageProcessor, ByT5Tokenizer,Seq2SeqTrainer, Seq2SeqTrainingArguments,TrOCRProcessor, ViTModel, default_data_collator)
+from transformers.integrations import TensorBoardCallback
 
 
 from custom_class import T5DecoderOnlyForCausalLM, OCRDataset
@@ -14,7 +15,7 @@ from config import *
 torch.cuda.empty_cache()
 device = torch.device('cuda:' + str(DEVICE))
 
-cer_metric = load_metric('cer')
+cer_metric = load('cer')
 
 def compute_metrics(pred):
     labels_ids = pred.label_ids
@@ -50,7 +51,7 @@ if __name__ == "__main__":
     print(f"Train & Val shape: {train_df.shape, val_df.shape}")
 
 
-    tokenizer = ByT5Tokenizer.from_pretrained('google/byt5-base')
+    tokenizer = ByT5Tokenizer.from_pretrained('google/byt5-small')
     image_processor=ViTImageProcessor.from_pretrained('google/vit-base-patch16-224-in21k')
     processor = TrOCRProcessor(image_processor=image_processor, tokenizer=tokenizer)
 
@@ -73,6 +74,8 @@ if __name__ == "__main__":
     model.config.no_repeat_ngram_size = 3
     model.config.length_penalty = 2.0
     model.config.num_beams = 4
+    model.config.decoder.max_length = 64
+    model.config.encoder.max_length = 64
 
 
     training_args = Seq2SeqTrainingArguments(
@@ -84,14 +87,17 @@ if __name__ == "__main__":
         fp16=False, ##
         fp16_full_eval=False,  # Disable FP16 full evaluation
         output_dir=CHECKPOINTS_DIR,
-        # logging_steps=500,
+        logging_steps=1000,
         save_steps=1000,
-        # eval_steps=500,
+        eval_steps=1000,
+        learning_rate=0.0001
     )
     
     if not os.path.exists(MODEL_DIR):
         os.makedirs(MODEL_DIR)
         os.makedirs(CHECKPOINTS_DIR)
+        
+    callbacks = [TensorBoardCallback()]
 
     trainer = Seq2SeqTrainer(
         model=model,
@@ -101,6 +107,7 @@ if __name__ == "__main__":
         train_dataset=train_dataset,
         eval_dataset=val_dataset,
         data_collator=default_data_collator,
+        callbacks=callbacks, # add TensorBoardCallback to the callbacks
     )
 
 

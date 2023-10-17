@@ -18,7 +18,7 @@ class T5DecoderOnlyForCausalLM(T5PreTrainedModel):
         config.num_layers = config.num_decoder_layers
         self.shared = nn.Embedding(config.vocab_size, config.d_model)
         self.decoder = T5Stack(config, self.shared)
-        self.decoder.block = nn.ModuleList([T5Block(config, has_relative_attention_bias=bool(i == 0)) for i in range(6)])
+        self.decoder.block = nn.ModuleList([T5Block(config, has_relative_attention_bias=bool(i == 0)) for i in range(4)])
         self.lm_head = nn.Linear(config.d_model, config.vocab_size, bias=False)
         self.is_decoder = True
         
