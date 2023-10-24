@@ -3,6 +3,8 @@ Levenshtein
 evaluate
 sentencepiece
 jiwer
+torch
+torchvision
 transformers[torch]
 pillow
 tensorboard

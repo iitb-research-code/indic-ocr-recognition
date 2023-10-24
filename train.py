@@ -3,17 +3,15 @@ import json
 import pandas as pd
 import torch
 
-
 from evaluate import load
 from transformers import (VisionEncoderDecoderModel, ViTImageProcessor, ByT5Tokenizer,Seq2SeqTrainer, Seq2SeqTrainingArguments,TrOCRProcessor, ViTModel, default_data_collator)
-from transformers.integrations import TensorBoardCallback
 
 
 from custom_class import T5DecoderOnlyForCausalLM, OCRDataset
 from config import *
 
 torch.cuda.empty_cache()
-device = torch.device('cuda:' + str(DEVICE))
+device = torch.device('cuda')
 
 cer_metric = load('cer')
 
@@ -44,6 +42,7 @@ def dataset_generator(root_dir):
     val_df.columns = ['file_name', 'text']
     
     return train_df, val_df
+
 
 if __name__ == "__main__":
     
@@ -87,17 +86,14 @@ if __name__ == "__main__":
         fp16=False, ##
         fp16_full_eval=False,  # Disable FP16 full evaluation
         output_dir=CHECKPOINTS_DIR,
-        logging_steps=1000,
-        save_steps=1000,
-        eval_steps=1000,
-        learning_rate=0.0001
+        logging_steps=2000,
+        save_steps=2000,
+        eval_steps=2000
     )
     
     if not os.path.exists(MODEL_DIR):
         os.makedirs(MODEL_DIR)
-        os.makedirs(CHECKPOINTS_DIR)
         
-    callbacks = [TensorBoardCallback()]
 
     trainer = Seq2SeqTrainer(
         model=model,
@@ -107,7 +103,6 @@ if __name__ == "__main__":
         train_dataset=train_dataset,
         eval_dataset=val_dataset,
         data_collator=default_data_collator,
-        callbacks=callbacks, # add TensorBoardCallback to the callbacks
     )
 
 

@@ -1,15 +1,14 @@
-DATA_DIR = '/home/ganesh/BADRI/RECOGNITION/data/iiit_indic_words/'
-LANGUAGE = 'hindi'
+DATA_DIR = '/data/BADRI/RECOGNITION/datasets/'
+LANGUAGE = 'hindi_new'
 
 DATA_PATH = DATA_DIR + LANGUAGE + '/'
-MODEL_DIR = './../models/' + LANGUAGE + '_test/'
-CHECKPOINTS_DIR = './../checkpoints/' + LANGUAGE + '_test/'
-
+MODEL_DIR = './../models/' + LANGUAGE + '/'
+CHECKPOINTS_DIR = './../checkpoints/' + LANGUAGE + '/'
 
 
 BATCH_SIZE = 64
 EPOCHS = 50
-DEVICE = 5
+MAX_TOKENS = 40
 
 
 ENCODER = "google/vit-base-patch32-384"
