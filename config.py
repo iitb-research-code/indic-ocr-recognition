@@ -12,5 +12,5 @@ EPOCHS = 50
 DEVICE = 5
 
 
-ENCODER = "google/vit-base-patch16-224"
+ENCODER = "google/vit-base-patch32-384"
 DECODER = "google/byt5-small"
