@@ -52,7 +52,7 @@ if __name__ == "__main__":
 
 
     tokenizer = ByT5Tokenizer.from_pretrained('google/byt5-small')
-    image_processor=ViTImageProcessor.from_pretrained('google/vit-base-patch16-224-in21k')
+    image_processor=ViTImageProcessor.from_pretrained('google/vit-base-patch32-384')
     processor = TrOCRProcessor(image_processor=image_processor, tokenizer=tokenizer)
 
 
