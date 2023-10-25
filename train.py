@@ -75,6 +75,7 @@ if __name__ == "__main__":
     model.config.num_beams = 4
     model.config.decoder.max_length = 64
     model.config.encoder.max_length = 64
+    model.config.encoder.patch_size = 8
 
 
     training_args = Seq2SeqTrainingArguments(
