@@ -25,7 +25,7 @@ def preview(image_path, model, processor, device, text):
     pixel_values = processor(image, return_tensors="pt").pixel_values
     pixel_values = pixel_values.to(device)
     model = model.to(device)
-    generated_ids = model.generate(pixel_values=pixel_values, max_new_tokens=MAX_TOKENS)
+    generated_ids = model.generate(pixel_values=pixel_values, max_new_tokens=MAX_TOKENS, num_beams = 4)
     generated_text = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
     return generated_text
 
