@@ -73,6 +73,7 @@ if __name__ == "__main__":
     model.config.no_repeat_ngram_size = 3
     model.config.length_penalty = 2.0
     model.config.num_beams = 4
+    model.config.decoder.num_beams = 4
     model.config.decoder.max_length = 64
     model.config.encoder.max_length = 64
     model.config.encoder.patch_size = 8
