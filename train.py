@@ -85,6 +85,9 @@ if __name__ == "__main__":
         num_train_epochs=EPOCHS,
         per_device_train_batch_size=BATCH_SIZE,
         per_device_eval_batch_size=BATCH_SIZE,
+        learning_rate=1e-4,
+        weight_decay = 1e-5,
+        predict_with_generate=True,
         fp16=False, ##
         fp16_full_eval=False,  # Disable FP16 full evaluation
         output_dir=CHECKPOINTS_DIR,
