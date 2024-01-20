@@ -3,9 +3,10 @@ import json
 import pandas as pd
 import torch
 
-from evaluate import load
+import evaluate
 from transformers import (VisionEncoderDecoderModel, ViTImageProcessor, ByT5Tokenizer,Seq2SeqTrainer, Seq2SeqTrainingArguments,TrOCRProcessor, ViTModel, default_data_collator)
 
+from torch.utils.data import DataLoader
 
 from custom_class import T5DecoderOnlyForCausalLM, OCRDataset
 from config import *
@@ -13,7 +14,10 @@ from config import *
 torch.cuda.empty_cache()
 device = torch.device('cuda')
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 983539b7cb8674dcd51918c5369e4d1c4051ba7b
 def compute_metrics(pred):
     labels_ids = pred.label_ids
     pred_ids = pred.predictions
@@ -62,6 +66,9 @@ if __name__ == "__main__":
     train_dataset = OCRDataset(root_dir=DATA_PATH + 'train/', df=train_df, processor=processor)
     val_dataset = OCRDataset(root_dir=DATA_PATH + 'val/', df=val_df, processor=processor)
 
+    train_dataloader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4, pin_memory=True, pin_memory_device=device)
+    eval_dataloader = DataLoader(val_dataset, batch_size=BATCH_SIZE, num_workers=4, pin_memory=True, pin_memory_device=device)
+
 
     encoder = ViTModel.from_pretrained(ENCODER)
     decoder = T5DecoderOnlyForCausalLM.from_pretrained(DECODER)
@@ -77,9 +84,16 @@ if __name__ == "__main__":
     model.config.length_penalty = 2.0
     model.config.num_beams = 4
     model.config.decoder.num_beams = 4
+<<<<<<< HEAD
     model.config.decoder.max_length = 32
     model.config.encoder.max_length = 32
     model.config.encoder.patch_size = 16
+=======
+    model.config.decoder.max_length = 64
+    model.config.encoder.max_length = 64
+    model.config.encoder.patch_size = 32
+    
+>>>>>>> 983539b7cb8674dcd51918c5369e4d1c4051ba7b
     model.to(device)
 
 
@@ -90,6 +104,7 @@ if __name__ == "__main__":
         per_device_train_batch_size=BATCH_SIZE,
         per_device_eval_batch_size=BATCH_SIZE,
         learning_rate=1e-4,
+<<<<<<< HEAD
         weight_decay = 0.01,
         # adam_beta1 = 0.8,
         # adam_beta2 = 0.999,
@@ -109,10 +124,25 @@ if __name__ == "__main__":
     )
             
     cer_metric = load('cer')
+=======
+        weight_decay = 1e-5,
+        fp16=True,
+        fp16_full_eval=True,
+        output_dir=CHECKPOINTS_DIR,
+        logging_steps=5000,
+        save_steps=20000,
+        eval_steps=20000
+    )
+    
+    if not os.path.exists(MODEL_DIR):
+        os.makedirs(MODEL_DIR)
+        
+    cer_metric = evaluate.load('cer')
+>>>>>>> 983539b7cb8674dcd51918c5369e4d1c4051ba7b
 
     trainer = Seq2SeqTrainer(
         model=model,
-        tokenizer=processor.feature_extractor,
+        tokenizer=processor.image_processor,
         args=training_args,
         compute_metrics=compute_metrics,
         train_dataset=train_dataset,
@@ -121,10 +151,13 @@ if __name__ == "__main__":
     )
     
     trainer.model.to(device)
+<<<<<<< HEAD
     
     # checkpoint_path = "/home/ganesh/BADRI/RECOGNITION/BYT5/checkpoints/merged/checkpoint-80000/"
     # trainer.train(resume_from_checkpoint=checkpoint_path)
     
+=======
+>>>>>>> 983539b7cb8674dcd51918c5369e4d1c4051ba7b
     trainer.train()
     
     if not os.path.exists(MODEL_DIR):
