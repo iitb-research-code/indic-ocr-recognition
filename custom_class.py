@@ -5,6 +5,7 @@ import torch.nn as nn
 
 from transformers.models.t5.modeling_t5 import T5PreTrainedModel, T5Stack, T5Block
 from transformers.modeling_outputs import CausalLMOutputWithCrossAttentions
+from config import DECODER_BLOCKS
 
 
 
@@ -18,7 +19,7 @@ class T5DecoderOnlyForCausalLM(T5PreTrainedModel):
         config.num_layers = config.num_decoder_layers
         self.shared = nn.Embedding(config.vocab_size, config.d_model)
         self.decoder = T5Stack(config, self.shared)
-        self.decoder.block = nn.ModuleList([T5Block(config, has_relative_attention_bias=bool(i == 0)) for i in range(4)])
+        self.decoder.block = nn.ModuleList([T5Block(config, has_relative_attention_bias=bool(i == 0)) for i in range(DECODER_BLOCKS)])
         self.lm_head = nn.Linear(config.d_model, config.vocab_size, bias=False)
         self.is_decoder = True
         

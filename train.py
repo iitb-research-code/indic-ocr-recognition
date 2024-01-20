@@ -13,7 +13,6 @@ from config import *
 torch.cuda.empty_cache()
 device = torch.device('cuda')
 
-cer_metric = load('cer')
 
 def compute_metrics(pred):
     labels_ids = pred.label_ids
@@ -42,7 +41,11 @@ def dataset_generator(root_dir):
     val_df.columns = ['file_name', 'text']
     
     return train_df, val_df
-
+    
+    # # SYNTH DATA
+    # train_df = pd.read_csv(root_dir + 'train.txt', names=['file_name', 'text'], sep=' ')
+    # val_df = pd.read_csv(root_dir + 'val.txt', names=['file_name', 'text'], sep=' ')
+    # return train_df, val_df
 
 if __name__ == "__main__":
     
@@ -50,8 +53,8 @@ if __name__ == "__main__":
     print(f"Train & Val shape: {train_df.shape, val_df.shape}")
 
 
-    tokenizer = ByT5Tokenizer.from_pretrained('google/byt5-small')
-    image_processor=ViTImageProcessor.from_pretrained('google/vit-base-patch32-384')
+    tokenizer = ByT5Tokenizer.from_pretrained(DECODER)
+    image_processor=ViTImageProcessor.from_pretrained(ENCODER)
     processor = TrOCRProcessor(image_processor=image_processor, tokenizer=tokenizer)
 
 
@@ -68,37 +71,44 @@ if __name__ == "__main__":
     model.config.pad_token_id = processor.tokenizer.pad_token_id
     model.config.vocab_size = model.config.decoder.vocab_size
     model.config.eos_token_id = tokenizer.eos_token_id
-    model.config.max_length = 64
+    model.config.max_length = 32
     model.config.early_stopping = True
     model.config.no_repeat_ngram_size = 3
     model.config.length_penalty = 2.0
     model.config.num_beams = 4
     model.config.decoder.num_beams = 4
-    model.config.decoder.max_length = 64
-    model.config.encoder.max_length = 64
-    model.config.encoder.patch_size = 8
+    model.config.decoder.max_length = 32
+    model.config.encoder.max_length = 32
+    model.config.encoder.patch_size = 16
+    model.to(device)
 
 
     training_args = Seq2SeqTrainingArguments(
         predict_with_generate=True,
-        evaluation_strategy="epoch",
+        evaluation_strategy="steps",
         num_train_epochs=EPOCHS,
         per_device_train_batch_size=BATCH_SIZE,
         per_device_eval_batch_size=BATCH_SIZE,
         learning_rate=1e-4,
-        weight_decay = 1e-5,
-        predict_with_generate=True,
-        fp16=False, ##
-        fp16_full_eval=False,  # Disable FP16 full evaluation
+        weight_decay = 0.01,
+        # adam_beta1 = 0.8,
+        # adam_beta2 = 0.999,
+        # lr_scheduler_type = 'reduce_lr_on_plateau',
+        # warmup_steps = 5000,
+        fp16=True,
+        fp16_full_eval=True,
         output_dir=CHECKPOINTS_DIR,
-        logging_steps=2000,
-        save_steps=2000,
-        eval_steps=2000
+        logging_steps=SAVE_STEPS,
+        save_steps=SAVE_STEPS,
+        eval_steps=EVAL_STEPS,
+        optim = 'adafactor',
+        adafactor = True,
+        save_total_limit = 1,
+        save_strategy = 'steps',
+        load_best_model_at_end=True
     )
-    
-    if not os.path.exists(MODEL_DIR):
-        os.makedirs(MODEL_DIR)
-        
+            
+    cer_metric = load('cer')
 
     trainer = Seq2SeqTrainer(
         model=model,
@@ -109,7 +119,14 @@ if __name__ == "__main__":
         eval_dataset=val_dataset,
         data_collator=default_data_collator,
     )
-
-
+    
+    trainer.model.to(device)
+    
+    # checkpoint_path = "/home/ganesh/BADRI/RECOGNITION/BYT5/checkpoints/merged/checkpoint-80000/"
+    # trainer.train(resume_from_checkpoint=checkpoint_path)
+    
     trainer.train()
+    
+    if not os.path.exists(MODEL_DIR):
+        os.makedirs(MODEL_DIR)
     torch.save(model.state_dict(), os.path.join(MODEL_DIR, 'model_state_dict.pth'))
