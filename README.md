@@ -16,3 +16,16 @@ OCR models Development and hosting all the available trained models of IIT Bomba
 ## DocTR
 
 ## Surya Marker
+
+
+# To Run the app
+
+1. pip install streamlit pytesseract pillow pdf2image
+2. sudo apt-get install poppler-utils
+sudo apt-get install tesseract-ocr
+or brew install poppler
+brew install tesseract
+brew install tesseract-lang
+
+
+3.  

@@ -8,6 +8,10 @@ from surya.model.recognition.processor import load_processor as load_rec_process
 
 from config import INPUT_DIR, OUTPUT_DIR, surya_langs
 
+
+if not os.path.exists(OUTPUT_DIR):
+    os.makedirs(OUTPUT_DIR)
+
 # Function to convert PDF to text using Tesseract OCR
 def pdf_to_text(pdf_path, output_txt_path, dpi=300, lang='eng'):
     """

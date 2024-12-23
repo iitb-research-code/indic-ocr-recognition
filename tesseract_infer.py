@@ -39,6 +39,9 @@ def pdf_to_text(pdf_path, output_txt_path, dpi=300, lang='eng'):
 
 # Example usage
 if __name__ == "__main__":
+
+    if not os.path.exists(OUTPUT_DIR):
+        os.makedirs(OUTPUT_DIR)
     
     for file in os.listdir(INPUT_DIR):
         

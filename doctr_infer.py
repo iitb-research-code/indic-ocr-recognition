@@ -3,16 +3,19 @@ from doctr.models import ocr_predictor
 import os
 from tqdm import tqdm
 
+from config import INPUT_DIR, OUTPUT_DIR
+
 model = ocr_predictor(pretrained=True)
 
+if not os.path.exists(OUTPUT_DIR):
+    os.makedirs(OUTPUT_DIR)
 
-data_dir = "pdfs"
-output_dir = "doc_outs"
 
 
-for file in tqdm(os.listdir(data_dir)):
+
+for file in tqdm(os.listdir(INPUT_DIR)):
     # PDF
-    doc = DocumentFile.from_pdf(data_dir + file)
+    doc = DocumentFile.from_pdf(INPUT_DIR + file)
     # Analyze
     result = model(doc)
 
@@ -23,5 +26,5 @@ for file in tqdm(os.listdir(data_dir)):
 
     
     name = file.split('.')[0]
-    with open(output_dir + name + '.txt', 'w') as f:
+    with open(OUTPUT_DIR + name + '.txt', 'w') as f:
         f.write(string_result)
