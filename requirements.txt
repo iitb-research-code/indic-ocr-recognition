@@ -1,0 +1,6 @@
+python-doctr
+python-doctr[torch]
+marker-pdf
+surya-ocr
+pytesseract
+pillow
